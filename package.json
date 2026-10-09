@@ -1,0 +1,28 @@
+{
+  "name": "ride-hailing-design",
+  "version": "1.0.0",
+  "description": "Ride-hailing service API and data models",
+  "main": "index.js",
+  "scripts": {
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "tsx scripts/seed.ts",
+    "verify:queries": "tsx scripts/verify-queries.ts",
+    "verify:constraints": "tsx scripts/verify-constraints.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "dotenv": "^16.4.7",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^9.5.0",
+    "@types/node": "^22.13.4",
+    "@types/pg": "^8.11.11",
+    "prisma": "7.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}

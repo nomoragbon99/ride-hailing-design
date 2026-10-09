@@ -1,0 +1,135 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum DriverStatus {
+  AVAILABLE
+  BUSY
+  OFFLINE
+}
+
+enum TripStatus {
+  REQUESTED
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  DEBIT_CARD
+  WALLET
+  CASH
+}
+
+model Rider {
+  id          String    @id @default(uuid()) @db.Uuid
+  email       String    @unique
+  phoneNumber String    @unique @map("phone_number")
+  name        String
+  rating      Decimal?  @db.Decimal(3, 2)
+  deletedAt   DateTime? @map("deleted_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  trips Trip[]
+
+  @@map("riders")
+}
+
+model Driver {
+  id            String       @id @default(uuid()) @db.Uuid
+  email         String       @unique
+  phoneNumber   String       @unique @map("phone_number")
+  name          String
+  licenseNumber String       @unique @map("license_number")
+  vehicleModel  String       @map("vehicle_model")
+  licensePlate  String       @unique @map("license_plate")
+  status        DriverStatus @default(AVAILABLE)
+  rating        Decimal?     @db.Decimal(3, 2)
+  deletedAt     DateTime?    @map("deleted_at")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  trips Trip[]
+
+  @@index([status])
+  @@map("drivers")
+}
+
+model Trip {
+  id                    String     @id @default(uuid()) @db.Uuid
+  riderId               String     @map("rider_id") @db.Uuid
+  driverId              String?    @map("driver_id") @db.Uuid
+  driverNameSnapshot    String?    @map("driver_name_snapshot")
+  driverVehicleSnapshot String?    @map("driver_vehicle_snapshot")
+  status                TripStatus @default(REQUESTED)
+
+  pickupLatitude  Decimal @map("pickup_latitude") @db.Decimal(9, 6)
+  pickupLongitude Decimal @map("pickup_longitude") @db.Decimal(9, 6)
+  pickupAddress   String  @map("pickup_address")
+
+  dropoffLatitude  Decimal @map("dropoff_latitude") @db.Decimal(9, 6)
+  dropoffLongitude Decimal @map("dropoff_longitude") @db.Decimal(9, 6)
+  dropoffAddress   String  @map("dropoff_address")
+
+  fareAmountMinor Int?     @map("fare_amount_minor")
+  currency        String   @default("USD") @db.VarChar(3)
+  requestedAt     DateTime @default(now()) @map("requested_at")
+  startedAt       DateTime? @map("started_at")
+  completedAt     DateTime? @map("completed_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  rider   Rider    @relation(fields: [riderId], references: [id])
+  driver  Driver?  @relation(fields: [driverId], references: [id])
+  payment Payment?
+
+  @@index([status, requestedAt])
+  @@index([driverId, status])
+  @@map("trips")
+}
+
+model Payment {
+  id                   String        @id @default(uuid()) @db.Uuid
+  tripId               String        @unique @map("trip_id") @db.Uuid
+  amountMinor          Int           @map("amount_minor")
+  currency             String        @db.VarChar(3)
+  status               PaymentStatus @default(PENDING)
+  paymentMethod        PaymentMethod @map("payment_method")
+  transactionReference String?       @map("transaction_reference")
+  createdAt            DateTime      @default(now()) @map("created_at")
+  updatedAt            DateTime      @updatedAt @map("updated_at")
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Restrict)
+
+  @@index([status])
+  @@map("payments")
+}
+
+model IdempotencyKey {
+  key          String    @id @db.VarChar(255)
+  scope        String    @db.VarChar(100)
+  userId       String?   @map("user_id") @db.Uuid
+  requestPath  String    @map("request_path")
+  requestHash  String    @map("request_hash")
+  responseCode Int       @map("response_code")
+  responseBody Json      @map("response_body")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  lockedUntil  DateTime? @map("locked_until")
+
+  @@map("idempotency_keys")
+}
